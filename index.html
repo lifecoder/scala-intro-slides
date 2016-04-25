@@ -7,11 +7,18 @@
 		<title>reveal.js</title>
 
 		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+		<link rel="stylesheet" href="css/theme/solarized.css">
 
 		<!-- Theme used for syntax highlighting of code -->
-		<link rel="stylesheet" href="lib/css/zenburn.css">
-
+		<link rel="stylesheet" href="lib/css/solarized-light.css">
+    <style>
+      .reveal pre.big {
+        font-size: 60px;
+      }
+      .reveal pre.normal {
+        font-size: 28px;
+      }
+    </style>
 		<!-- Printing and PDF exports -->
 		<script>
 			var link = document.createElement( 'link' );
@@ -24,8 +31,490 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+				<section>
+          <h1>Elements of Functional Programming</h1>
+        </section>
+				<section>
+          <h2>Popular Functional Languages</h2>
+          <ul>
+						<li>Scala</li>
+            <li>F#</li>
+						<li>Haskell</li>
+						<li>Clojure</li>
+            <li>Scheme</li>
+						<li>Ocaml</li>
+					</ul>
+        </section>
+
+        <section>
+          <h2>Scala Quick Tour</h2>
+        </section>
+        <section>
+          <h2>Variables</h2>
+          <pre class="big"><code class="scala" data-trim>
+val x = 10
+x = 20 // error!
+var y = 30
+y = 40 // OK
+          </code></pre>
+        </section>
+        <section>
+          <h2>Case classes</h2>
+          <pre class="normal"><code class="scala" data-trim>
+case class Point(x: Int, y: Int)
+val p1 = Point(10, 20)
+val p2 = Point(0, p1.y)
+          </code></pre>
+        </section>
+        <section>
+          <h2>Functions</h2>
+          <pre class="normal"><code class="scala" data-trim>
+object Utils {
+  def times(x: Int, n: Int): Int =
+    x * n
+  def twice(x: Int) = times(2, x)
+}
+          </code></pre>
+        </section>
+        <section>
+          <h2>Lambda Expression</h2>
+          <pre class="normal"><code class="scala" data-trim>
+def twice(f: Int => Int, x: Int): Int =
+  f(f(x))
+
+twice((x: Int) => x * 3, 10)
+twice(x => x * 3, 10)
+twice(_ * 3, 10)
+          </code></pre>
+        </section>
+        <section>
+          <h2>Parametric Polymorphism</h2>
+          <pre class="normal"><code class="scala" data-trim>
+def twice[T](f: T => T, x: T): T =
+  f(f(x))
+          </code></pre>
+        </section>
+        <section>
+          <h2>Currying</h2>
+          <pre class="normal"><code class="scala" data-trim>
+def twice[T](f: T => T)(x: T): T =
+  f(f(x))
+
+val plusFour: Int => Int = twice(_ + 2)
+plusFour(10)
+twice((_: Int) + 2)(10)
+          </code></pre>
+        </section>
+        <section>
+          <h2>ADT</h2>
+          <pre class="normal"><code class="scala" data-trim>
+sealed trait MyBool
+case object True extends MyBool
+case object False extends MyBool
+def not(b: MyBool): MyBool = b match {
+  case True => False
+  case False => True
+}
+          </code></pre>
+        </section>
+        <section>
+          <h2>ADT</h2>
+          <pre class="normal"><code class="scala" data-trim>
+sealed trait E
+case class Plus(a: E, b: E) extends E
+case class Const(x: Int) extends E
+
+</code></pre>
+        </section>
+        <section>
+          <h2>Pattern Matching</h2>
+          <pre class="normal"><code class="scala" data-trim>
+def eval(e: E): Int = e match {
+  case Const(x) => x
+  case Plus(a, b) => eval(a) + eval(b)
+}
+val e: E =
+  Plus(
+    Const(10),
+    Plus(Const(2), Const(3)))
+println(eval(e)) // prints 15
+</code></pre>
+        </section>
+        <section>
+          <h2>Pattern Matching</h2>
+          <pre class="normal"><code class="scala" data-trim>
+def opt(e: E): E = e match {
+  case Plus(Const(0), x) => x
+  case Plus(x, Const(0)) => x
+  case Plus(x, y) =>
+    Plus(opt(x), opt(y))
+  case c@Const(_) => c
+}
+</code></pre>
+        </section>
+        <section>
+          <h2>Pattern Matching</h2>
+          <pre class="normal"><code class="scala" data-trim>
+val e: E =
+  Plus(Const(10),
+    Plus(Const(2), Const(0)))
+println(opt(e))
+// Prints: Plus(Const(10),Const(2))
+</code></pre>
+        </section>
+        <section>
+          <h3>Implicits</h3>
+          <pre class="normal"><code class="scala" data-trim>
+trait Logger {
+  def output(s: String): Unit
+}
+def log(s: String)(implicit log: Logger) =
+  log.output(s)
+</code></pre>
+        </section>
+        <section>
+          <h3>Implicits</h3>
+          <pre class="normal"><code class="scala" data-trim>
+implicit val logger = new Logger {
+  override def output(s: String): Unit =
+    println(s)
+}
+def work(): Unit = {
+  log("Working...")
+  log("Done!")
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Type classes</h3>
+          <pre class="normal"><code class="scala" data-trim>
+trait Show[T] {
+  def show(x: T): String
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Type classes</h3>
+          <pre class="normal"><code class="scala" data-trim>
+def show[T](x: T)(implicit s: Show[T]): String =
+  s.show(x)
+def mkShow[T](f: T => String): Show[T] =
+  new Show[T] {
+    override def show(x: T): String = f(x)
+  }
+</code></pre>
+        </section>
+        <section>
+          <h3>Type classes</h3>
+          <pre class="normal"><code class="scala" data-trim>
+implicit val stringShow: Show[String] =
+  mkShow(x => x)
+implicit val intShow: Show[Int] =
+  mkShow(_.toString)
+implicit
+  def ls[T](implicit s: Show[T]): Show[List[T]] =
+    mkShow(_.map(s.show).mkString(", "))
+</code></pre>
+        </section>
+        <section>
+          <h3>Type classes</h3>
+          <pre class="normal"><code class="scala" data-trim>
+println(show(10))
+println(show("Hello"))
+println(show(List(1, 2, 3)))
+println(show('a')) // error!
+</code></pre>
+        </section>
+
+        <section>
+          <h3>Equality type class</h3>
+          <pre class="normal"><code class="scala" data-trim>
+true == true
+"hello" == UserId(32)
+2 == 2.0
+dbConnection == dbConnection
+</code></pre>
+        </section>
+        <section>
+          <h3>Equality type class</h3>
+          <pre class="normal"><code class="scala" data-trim>
+trait Eq[T] {
+  def equal(a: T, b: T): Boolean
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Equality operations</h3>
+          <pre class="normal"><code class="scala" data-trim>
+trait EqOps[T] {
+  def ===(other: T): Boolean
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Equality operations</h3>
+          <pre><code class="scala" data-trim>
+implicit def toEqOps[T](t: T)(implicit e: Eq[T]): EqOps[T] =
+  new EqOps[T] {
+    def ===(other: T) =
+      e.equal(t, other)
+  }
+</code></pre>
+        </section>
+        <section>
+          <h3>Equality instances</h3>
+          <pre class="normal"><code class="scala" data-trim>
+implicit val intEq: Eq[Int] = new Eq[Int] {
+  override def equal(a: Int, b: Int): Boolean =
+    a == b
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Equality instances</h3>
+          <pre><code class="scala" data-trim>
+implicit def
+tupleEq[A, B](implicit eqA: Eq[A], eqB: Eq[B]): Eq[(A, B)] =
+  new Eq[(A, B)] {
+    override def equal(a: (A, B), b: (A, B)): Boolean =
+      eqA.equal(a._1, b._1) &amp;&amp; eqB.equals(a._2, b._2)
+  }
+</code></pre>
+        </section>
+        <section>
+          <h3>Equality instances</h3>
+          <pre class="normal"><code class="scala" data-trim>
+import EqualityExample._
+println(1 === 1) // true
+println(1 === 2) // false
+println((1, 2) === (1, 2)) // true
+println(4 === "test") // error
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre class="normal"><code class="scala" data-trim>
+sealed trait Opt[+T]
+case class Some[T](x: T) extends Opt[T]
+case object None extends Opt[Nothing]
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+def div(a: Int, b: Int): Opt[Int] =
+  if (b == 0) None else Some(a / b)
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+def useDiv() = {
+  val a = div(10, 5)
+  println(a) // Some(2)
+  val b = div(10, 0)
+  println(b) // None
+}
+</code></pre>
+        </section>
+        <section>
+          <img src="https://i.ytimg.com/vi/nhnAnosoyEs/maxresdefault.jpg" />
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+sealed trait Opt[+T] {
+  def isDefined: Boolean
+  def get: T
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+case class Some[T](x: T) extends Opt[T] {
+  override def isDefined: Boolean = true
+  override def get: T = x
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+case object None extends Opt[Nothing] {
+  override def isDefined: Boolean = false
+  override def get: Nothing =
+    throw new RuntimeException("Error")
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+def useDiv() = {
+  val a = div(10, 5)
+  if (a.isDefined)
+    println(a.get)
+  val b = div(10, 0)
+  if (b.isDefined)
+    println(b.get)
+}
+</code></pre>
+        </section>
+        <section>
+          <img src="http://heavyeditorial.files.wordpress.com/2013/02/badassgifs4.gif?w=780" />
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+sealed trait Opt[+T] {
+  def map[R](f: T => R): Opt[R] = this match {
+    case None => None
+    case Some(x) => Some(f(x))
+  }
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+def useDiv() = {
+  val a = div(10, 5)
+  println(a.map(_ + 1)) // prints Some(3)
+  val b = div(10, 0).map(_ + 1)
+  println(b) // prints None
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+def useDiv() = {
+  val a = div(10, 5).map(_ + 1)
+  println(a)
+  // error in next line: A is Opt[Int]
+  val b = div(a, 2).map(_ + 2)
+  println(b)
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+sealed trait Opt[+T] {
+  def flatMap[R](f: T => Opt[R]): Opt[R] =
+    this match {
+      case None => None
+      case Some(x) => f(x)
+    }
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+def useDiv() = {
+  val a = div(10, 5)
+  val b = a.flatMap(x => div(x, 2).map(_ + 1))
+  println(b) // None
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Optional values</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+def useDiv2() = {
+  val res = for {
+    a &lt;- div(10, 5)
+    b &lt;- div(a, 2)
+  } yield b + 1
+  println(res) // Some(2)
+}
+</code></pre>
+        </section>
+        <section>
+          <h3>Flat map chain</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+val a = div(10, 5)
+  .flatMap(x => div(x, 0))
+  .flatMap(x => div(x, 2))
+  .flatMap(x => Some(x + 1))
+println(a) // None
+          </code></pre>
+        </section>
+        <section>
+          <h3>Flat map chain</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+val a = div(10, 5)
+  .flatMap(div(_, 0))
+  .flatMap(div(_, 2))
+  .flatMap(x => Some(x + 1))
+println(a) // None
+          </code></pre>
+        </section>
+        <section>
+          <h3>Optional</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+sealed trait Opt[+T] {
+  def isDefined: Boolean // Bad
+  def get: T // Bad
+  def getOrElse[B >: T](y: => B): B =
+    this match {
+      case Some(x) => x
+      case None => y
+    }
+}
+          </code></pre>
+        </section>
+        <section>
+          <h3>Optional</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+div(10, 0).getOrElse(0) // 0
+          </code></pre>
+        </section>
+        <section>
+          <h3>Optional</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+div(10, 0) match {
+  case Some(x) => println(x)
+  // error: missing case
+}
+          </code></pre>
+        </section>
+        <section>
+          <h3>Optional</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+div(10, 0) match {
+  case Some(x) => println(x)
+  case None => println("Nope.")
+}
+          </code></pre>
+        </section>
+        <section>
+          <h3>Either</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+sealed trait Either[A, B]
+case class Left[A, B](a: A) extends Either[A, B]
+case class Right[A, B](b: B) extends Either[A, B]
+          </code></pre>
+        </section>
+        <section>
+          <h3>Either</h3>
+          <pre  class="normal"><code class="scala" data-trim>
+def f(): Either[Int, String] =
+  Left(10)
+def g() = {
+  f() match {
+    case Left(a) => println("Left " + a)
+    case Right(b) => println("Right " + b)
+  }
+}
+
+          </code></pre>
+        </section>
+        <section>
+          <h3>Demo</h3>
+        </section>
 			</div>
 		</div>
 
@@ -36,7 +525,7 @@
 			// More info https://github.com/hakimel/reveal.js#configuration
 			Reveal.initialize({
 				history: true,
-
+				progress: true,
 				// More info https://github.com/hakimel/reveal.js#dependencies
 				dependencies: [
 					{ src: 'plugin/markdown/marked.js' },
